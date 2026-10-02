@@ -70,7 +70,7 @@ function parseCreators(metadata: OpfMetadata): Array<Creator | false> | null {
   const creatorNodes = metadata['dc:creator'] as CreatorNode[] | undefined
   if (!creatorNodes?.length) return null
   return creatorNodes.map((creatorNode) => {
-    const c = creatorNode as CreatorNode
+    const c = creatorNode
     if (typeof c !== 'object' || !c['$'] || !c['_']) return false
     const namespace =
       Object.keys(c['$'])
@@ -133,14 +133,14 @@ function fetchIdentifier(metadata: OpfMetadata, scheme: string): string | null {
   const identifiers = metadata['dc:identifier'] as CreatorNode[] | undefined
   if (!identifiers?.length) return null
   const identifierObj = identifiers.find((identifier) => {
-    const i = identifier as CreatorNode
+    const i = identifier
     if (!i['$']) return false
     const namespace =
       Object.keys(i['$'])
         .find((key) => key.startsWith('xmlns:'))
         ?.split(':')[1] || 'opf'
     return i['$'][`${namespace}:scheme`] === scheme
-  }) as CreatorNode | undefined
+  })
   return identifierObj?.['_'] || null
 }
 
@@ -166,7 +166,7 @@ function fetchDescription(metadata: OpfMetadata): string | null {
   // check if description is HTML or plain text. only plain text allowed
   // calibre stores < and > as &lt; and &gt;
   description = description.replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-  return stripAllTags(description)
+  return stripAllTags(description) as string
 }
 
 function fetchGenres(metadata: OpfMetadata): string[] {
@@ -289,8 +289,8 @@ export function parseOpfMetadataJson(json: Record<string, unknown>): OpfMetadata
 }
 
 export async function parseOpfMetadataXML(xml: string): Promise<OpfMetadataResult | null> {
-  const json = await xmlToJSON(xml)
+  const json = (await xmlToJSON(xml)) as Record<string, unknown> | null
   if (!json) return null
 
-  return parseOpfMetadataJson(json as Record<string, unknown>)
+  return parseOpfMetadataJson(json)
 }

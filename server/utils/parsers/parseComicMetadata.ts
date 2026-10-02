@@ -5,6 +5,8 @@ import globals from '../globals'
 import { xmlToJSON } from '../index'
 import { createComicBookExtractor } from '../comicBookExtractors'
 import { parse as parseComicInfoMetadata } from './parseComicInfoMetadata'
+
+type ComicInfoDocument = Parameters<typeof parseComicInfoMetadata>[0]
 import type { EBookFileScanData } from './parseEbookMetadata'
 
 /**
@@ -52,10 +54,11 @@ export async function parse(ebookFile: EBookFileObject): Promise<EBookFileScanDa
     let metadata = null
     const comicInfoPath = filePaths.find((filePath) => filePath === 'ComicInfo.xml')
     if (comicInfoPath) {
-      const comicInfoData = await archive.extractToBuffer(comicInfoPath)
+      // extractToBuffer and xmlToJSON are inferred as any from untyped JavaScript.
+      const comicInfoData = (await archive.extractToBuffer(comicInfoPath)) as AllowSharedBufferSource | null | undefined
       if (comicInfoData) {
         const comicInfoStr = new TextDecoder().decode(comicInfoData)
-        const comicInfoJson = await xmlToJSON(comicInfoStr)
+        const comicInfoJson = (await xmlToJSON(comicInfoStr)) as ComicInfoDocument
         if (comicInfoJson) {
           metadata = parseComicInfoMetadata(comicInfoJson)
         }

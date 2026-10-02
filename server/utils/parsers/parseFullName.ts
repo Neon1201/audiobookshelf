@@ -71,6 +71,8 @@ const parseFullName = (nameToParse: unknown, partToReturn?: unknown, fixCase?: u
   // If stopOnError = 1, throw error, otherwise return error messages in array
   function handleError(errorMessage: string) {
     if (stopOnErrorFlag) {
+      // The original function throws this string. Catch sites compare it as a string.
+      // eslint-disable-next-line @typescript-eslint/only-throw-error
       throw 'Error: ' + errorMessage
     } else {
       parsedName.error.push('Error: ' + errorMessage)

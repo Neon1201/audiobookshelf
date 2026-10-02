@@ -122,7 +122,7 @@ export { parseJsonMetadataText as parseJson }
 /**
  * @returns undefined excludes the key
  */
-function validateMetadataValue(key: string, value: unknown, expectedType: ExpectedType): MetadataScalar | undefined {
+function validateMetadataValue(key: string, value: unknown, expectedType: string): MetadataScalar | undefined {
   if (expectedType === 'string') {
     if (value === null) return null
     if (typeof value === 'number') return String(value)
@@ -218,6 +218,6 @@ function logText(value: unknown): string {
   if (Array.isArray(value)) {
     return value.map((item) => (item == null ? '' : logText(item))).join(',')
   }
-  if (value.toString !== Object.prototype.toString) return value.toString()
-  return '[object Object]'
+  // Match template-literal stringification, including a custom toString.
+  return `${value as unknown as string}`
 }

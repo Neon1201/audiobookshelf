@@ -30,6 +30,12 @@ type ManifestItem = {
   $?: XmlAttrs
 }
 
+type EpubZip = {
+  entryData(entry: string): Promise<Buffer>
+  extract(entry: string, outPath: string): Promise<unknown>
+  close(): Promise<void>
+}
+
 type EpubPackageJson = {
   container?: {
     rootfiles?: Array<{
@@ -47,8 +53,12 @@ type EpubPackageJson = {
 /**
  * Extract a file from an epub and return its string content.
  */
+function openEpubZip(epubPath: string): EpubZip {
+  return new StreamZip.async({ file: epubPath })
+}
+
 async function extractFileFromEpub(epubPath: string, filepath: string): Promise<string | undefined> {
-  const zip = new StreamZip.async({ file: epubPath })
+  const zip = openEpubZip(epubPath)
   const data = await zip.entryData(filepath).catch((error: unknown) => {
     Logger.error(`[parseEpubMetadata] Failed to extract ${filepath} from epub at "${epubPath}"`, error)
   })
@@ -66,14 +76,15 @@ async function extractFileFromEpub(epubPath: string, filepath: string): Promise<
 async function extractXmlToJson(epubPath: string, xmlFilepath: string): Promise<EpubPackageJson | null> {
   const filedata = await extractFileFromEpub(epubPath, xmlFilepath)
   if (!filedata) return null
-  return xmlToJSON(filedata)
+  // xmlToJSON resolves parser output as any.
+  return (await xmlToJSON(filedata)) as EpubPackageJson | null
 }
 
 /**
  * Extract a cover image from an epub. Returns true on success.
  */
 export async function extractCoverImage(epubPath: string, epubImageFilepath: string, outputCoverPath: string): Promise<boolean> {
-  const zip = new StreamZip.async({ file: epubPath })
+  const zip = openEpubZip(epubPath)
 
   const success = await zip
     .extract(epubImageFilepath, outputCoverPath)

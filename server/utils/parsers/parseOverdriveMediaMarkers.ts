@@ -1,3 +1,4 @@
+import { createRequire } from 'module'
 import Logger from '../../Logger'
 
 type MarkerXml = Record<string, { toString(): string }>
@@ -7,7 +8,8 @@ type OverdriveXml = {
   }
 }
 
-const xml2js = require('xml2js') as {
+const nodeRequire = createRequire(__filename)
+const xml2js = nodeRequire('xml2js') as {
   parseString(xml: string, callback: (err: Error | null, result: OverdriveXml) => void): void
 }
 
