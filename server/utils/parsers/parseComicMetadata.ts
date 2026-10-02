@@ -1,20 +1,17 @@
-const Path = require('path')
-const Logger = require('../../Logger')
-const parseComicInfoMetadata = require('./parseComicInfoMetadata')
-const globals = require('../globals')
-const { xmlToJSON } = require('../index')
-const { createComicBookExtractor } = require('../comicBookExtractors.js')
+import Path from 'path'
+import Logger from '../../Logger'
+import type { EBookFileObject } from '../../models/Book'
+import globals from '../globals'
+import { xmlToJSON } from '../index'
+import { createComicBookExtractor } from '../comicBookExtractors'
+import { parse as parseComicInfoMetadata } from './parseComicInfoMetadata'
+import type { EBookFileScanData } from './parseEbookMetadata'
 
 /**
- * Extract cover image from comic return true if success
- *
- * @param {string} comicPath
- * @param {string} comicImageFilepath
- * @param {string} outputCoverPath
- * @returns {Promise<boolean>}
+ * Extract a cover image from a comic. Returns true on success.
  */
-async function extractCoverImage(comicPath, comicImageFilepath, outputCoverPath) {
-  let archive = null
+export async function extractCoverImage(comicPath: string, comicImageFilepath: string, outputCoverPath: string): Promise<boolean> {
+  let archive: ReturnType<typeof createComicBookExtractor> | null = null
   try {
     archive = createComicBookExtractor(comicPath)
     await archive.open()
@@ -27,25 +24,22 @@ async function extractCoverImage(comicPath, comicImageFilepath, outputCoverPath)
     archive?.close()
   }
 }
-module.exports.extractCoverImage = extractCoverImage
 
 /**
- * Parse metadata from comic
- *
- * @param {import('../../models/Book').EBookFileObject} ebookFile
- * @returns {Promise<import('./parseEbookMetadata').EBookFileScanData>}
+ * Parse metadata from a comic.
  */
-async function parse(ebookFile) {
+export async function parse(ebookFile: EBookFileObject): Promise<EBookFileScanData | null> {
   const comicPath = ebookFile.metadata.path
   Logger.debug(`[parseComicMetadata] Parsing comic metadata at "${comicPath}"`)
-  let archive = null
+  let archive: ReturnType<typeof createComicBookExtractor> | null = null
   try {
     archive = createComicBookExtractor(comicPath)
     await archive.open()
 
-    const filePaths = await archive.getFilePaths().catch((error) => {
+    // A missing path list throws on sort, which the catch below reports.
+    const filePaths = (await archive.getFilePaths().catch((error: unknown) => {
       Logger.error(`[parseComicMetadata] Failed to get file paths from comic at "${comicPath}"`, error)
-    })
+    })) as string[]
 
     // Sort the file paths in a natural order to get the first image
     filePaths.sort((a, b) => {
@@ -63,12 +57,12 @@ async function parse(ebookFile) {
         const comicInfoStr = new TextDecoder().decode(comicInfoData)
         const comicInfoJson = await xmlToJSON(comicInfoStr)
         if (comicInfoJson) {
-          metadata = parseComicInfoMetadata.parse(comicInfoJson)
+          metadata = parseComicInfoMetadata(comicInfoJson)
         }
       }
     }
 
-    const payload = {
+    const payload: EBookFileScanData = {
       path: comicPath,
       ebookFormat: ebookFile.ebookFormat,
       metadata
@@ -90,4 +84,3 @@ async function parse(ebookFile) {
     archive?.close()
   }
 }
-module.exports.parse = parse
